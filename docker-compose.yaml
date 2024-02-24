@@ -1,0 +1,54 @@
+version: '3'
+services:
+  # HTTPSのリバースプロキシ用コンテナ
+  # API Gatewayがcomposeの外で動いてるので、ホストマシンへのリクエストに対してこいつを噛ませる必要がある
+  # あくまで同じネットワーク内にいるのは各Lambdaのコンテナのみなので、それを直接Proxyすることはできない
+  # ※現在、Docker Desktopでのみ動作します。使ってない人はwebコンテナ経由で呼ばないようにしましょう。
+  # https://github.com/docker/cli/issues/2290 を待ちましょう。
+  web:
+    container_name: ${COMPOSE_PROJECT_NAME}-web
+    environment:
+      - TZ=Asia/Tokyo
+    build:
+      context: ./local/web
+      args:
+        - DEV_HOSTNAME=localhost # このAPIのドメイン
+        - FRONTEND_HOST=localhost # フロントエンドのホスト名 ※画面が別にあり、同時に起動したい場合はそれのホストを入れる
+        - FRONTEND_PORT=${FRONTEND_PORT} # フロントエンドのポート ※画面が別にあり、同時に起動したい場合はそれのホストを入れる
+        - PROXY_API_PORT=${PROXY_API_PORT} # sam local start-apiした時のポート
+    tty: true
+    volumes:
+      - ./local/logs/nginx:/var/log/nginx
+      # - ./local/secrets/cert:/etc/cert # TODO SSL対応するなら必要
+    ports:
+      - "${HTTPS_PORT}:443"
+      - "${HTTP_PORT}:80"
+    networks:
+      - default-network
+    extra_hosts:
+      - host.docker.internal:host-gateway # ホストマシン側のIPに対してapiと名付けておく
+  db:
+    container_name: ${COMPOSE_PROJECT_NAME}-db # composeの外でも使うので名前をつける
+    image: mysql:8.3.0
+    tty: true
+    environment:
+      MYSQL_ROOT_PASSWORD: R1o2o3t4P5a6s7s8w9o0rd
+      MYSQL_DATABASE: sample
+      MYSQL_USER: sample_user
+      MYSQL_PASSWORD: U1s2e3r4P5a6s7s8w9o0rd
+      TZ: Etc/GMT
+    ports:
+      - "${DB_PORT}:3306"
+    volumes:
+      - db-volume:/var/lib/mysql
+      - ./local/db/conf/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./local/db/initdb.d:/docker-entrypoint-initdb.d
+      - ./local/logs/db:/var/log/mysql/
+    networks:
+      - default-network
+volumes:
+  db-volume:
+networks:
+  default-network:
+    driver: bridge
+    name: ${COMPOSE_PROJECT_NAME}-network # composeの外でも使うので名前をつける

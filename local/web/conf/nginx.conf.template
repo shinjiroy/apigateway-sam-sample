@@ -1,0 +1,65 @@
+user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log notice;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /dev/stdout  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    proxy_read_timeout 240;
+    proxy_connect_timeout 240;
+    proxy_send_timeout 240;
+
+    #gzip  on;
+
+    # 別のプロジェクトのローカル環境からアクセスさせたい時CORSのエラーが出ないようにする
+    # ここに「別のプロジェクトのローカル環境」の{プロトコル}://{ホスト}:{ポート}を追加してね
+    map $http_origin $cors{
+        "http://${FRONTEND_HOST}" $http_origin;
+        "http://${FRONTEND_HOST}:${FRONTEND_PORT}" $http_origin;
+    }
+
+    server {
+        server_name ${DEV_HOSTNAME};
+
+        # TODO SSL化したら消す
+        listen 80;
+
+        # TODO SSL化したら復活させる
+        #listen 443 ssl http2;
+        #ssl_protocols TLSv1.2 TLSv1.3;
+        #ssl_certificate /etc/cert/fullchain.pem;
+        #ssl_certificate_key /etc/cert/privkey.pem;
+
+        # ホストマシン側でsam local start-apiしたやつのProxy
+        location / {
+            add_header Access-Control-Allow-Origin $cors;
+            add_header Access-Control-Allow-Methods "POST, GET, OPTIONS, PUT, DELETE, HEAD";
+            add_header Access-Control-Allow-Headers "Origin, Authorization, Accept";
+            # add_header Access-Control-Allow-Credentials true;
+            proxy_buffering off;
+            proxy_max_temp_file_size 0;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Host $host;
+            # apiという名前がホストマシン側のIPに紐づいてるはず
+            proxy_pass http://host.docker.internal:${PROXY_API_PORT};
+        }
+    }
+}

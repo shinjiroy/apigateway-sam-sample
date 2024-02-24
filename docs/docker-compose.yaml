@@ -1,0 +1,29 @@
+version: "3"
+services:
+  editor:
+    image: swaggerapi/swagger-editor
+    ports:
+      - "8011:8080"
+    volumes:
+      - ./openapi.yaml:/openapi.yaml
+    environment:
+      SWAGGER_FILE: /openapi.yaml
+  ui:
+    image: swaggerapi/swagger-ui
+    ports:
+      - "8012:8080"
+    volumes:
+      - ./openapi.yaml:/openapi.yaml
+    environment:
+      SWAGGER_JSON: /openapi.yaml
+      SUPPORTED_SUBMIT_METHODS: "[]"
+  codegen:
+    image: swaggerapi/swagger-codegen-cli-v3
+    ports:
+      - "8013:8080"
+    volumes:
+      - ./mock:/mock
+      - ./openapi.yaml:/openapi.yaml
+    environment:
+      SWAGGER_JSON: /openapi.yaml
+    command: generate -l nodejs-server -i /openapi.yaml -o /mock
