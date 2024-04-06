@@ -25,4 +25,4 @@ sam build --use-container --skip-pull-image
 # docker-composeで作成したコンテナにつなげられる状態で起動
 # ※--debugを付けるとEventの中身とかが全部出て便利
 # ※.envのPROXY_API_PORTを変えたら docker compose build web をしてから実行してね。
-sam local start-api --docker-network ${COMPOSE_PROJECT_NAME}-network --env-vars ./local/sam_api_env.json --skip-pull-image --port $PROXY_API_PORT
+sam local start-api --docker-network ${COMPOSE_PROJECT_NAME}-network --env-vars ./local/sam_api_env.json --skip-pull-image --port $PROXY_API_PORT --host 0.0.0.0

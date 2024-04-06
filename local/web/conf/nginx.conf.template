@@ -59,7 +59,7 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
             proxy_set_header Host $host;
             # apiという名前がホストマシン側のIPに紐づいてるはず
-            proxy_pass http://host.docker.internal:${PROXY_API_PORT};
+            proxy_pass http://api:${PROXY_API_PORT};
         }
     }
 }

@@ -26,7 +26,7 @@ services:
     networks:
       - default-network
     extra_hosts:
-      - host.docker.internal:host-gateway # ホストマシン側のIPに対してapiと名付けておく
+      - api:host-gateway # ホストマシン側のIPに対してapiと名付けておく
   db:
     container_name: ${COMPOSE_PROJECT_NAME}-db # composeの外でも使うので名前をつける
     image: mysql:8.3.0
